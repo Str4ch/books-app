@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react"
 import type { Author } from "../../types/Authors"
 import type { Book } from "../../types/Book"
+import { searchBooksByTitle } from "../../service/googleBooksService"
 
 
 interface AddBookFormProps {
@@ -9,6 +10,12 @@ interface AddBookFormProps {
 	onCancel?: () => void
 }
 
+interface BookSearchResultsProps {
+	searchResults: Book[]
+	authors: Author[]
+	onSelectBook: (book: Book) => void
+	onClearResults: () => void
+}
 const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 	const [formData, setFormData] = useState<Book>({
 		title: "",
@@ -20,6 +27,9 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 	})
 
 	const [errors, setErrors] = useState<Partial<Record<keyof Book, string>>>({})
+	const [searchResults, setSearchResults] = useState<any[]>([])
+	const [isSearching, setIsSearching] = useState(false)
+	const [isbnNotFound, setIsbnNotFound] = useState<boolean>(false)
 
 	const handleChange = (
 		e: React.ChangeEvent<
@@ -27,6 +37,8 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 		>
 	) => {
 		const { name, value } = e.target
+		console.log(123)
+		// Update form data immediately (synchronously)
 		setFormData((prev) => ({
 			...prev,
 			[name]:
@@ -34,11 +46,35 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 					? parseInt(value) || 0
 					: value,
 		}))
+
 		// Clear error when user starts typing
 		if (errors[name as keyof Book]) {
 			setErrors((prev) => ({ ...prev, [name]: "" }))
+			setIsbnNotFound(false)
+		}
+
+		// Search for books by title as user types (asynchronously)
+		if (name === "title" && value.length > 2) {
+			//console.log("title changes...", value)
+			setIsSearching(true)
+			searchBooksByTitle(value)
+				.then((books) => {
+					console.log("Found books:", books)
+
+					setSearchResults(books)
+				})
+				.catch((error) => {
+					console.error("Error searching books:", error)
+					setSearchResults([])
+				})
+				.finally(() => {
+					setIsSearching(false)
+				})
+		} else if (name === "title" && value.length <= 2) {
+			setSearchResults([])
 		}
 	}
+
 
 	const validate = (): boolean => {
 		const newErrors: Partial<Record<keyof Book, string>> = {}
@@ -98,13 +134,35 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 		}
 	}
 
+	// Helper to find authorId by name (if needed)
+	const getAuthorIdByName = (name: string) => {
+		const found = authors.find((a) => a.name === name)
+		return found ? found.id : 0
+	}
+
+	// Fill form when suggestion is clicked
+	const handleBookClick = (book: Book) => {
+		setFormData((prev) => ({
+			...prev,
+			title: book.title || "",
+			authorId: book.authorId
+				? Number(book.authorId) || 0
+				: getAuthorIdByName(book.authorId as unknown as string),
+			isbn: book.isbn || "",
+			publishedYear: book.publishedYear || new Date().getFullYear(),
+			description: book.description || "",
+			coverUrl: book.coverUrl || "",
+		}))
+		setSearchResults([])
+	}
+
 	return (
 		<div className="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
 			<h2 className="text-2xl font-bold text-gray-800 mb-6">Add New Book</h2>
 
 			<form onSubmit={handleSubmit} className="space-y-4">
-				{/* Title Input */}
-				<div>
+				{/* Title Input + Suggestions */}
+				<div className="relative">
 					<label
 						htmlFor="title"
 						className="block text-sm font-medium text-gray-700 mb-1"
@@ -121,9 +179,64 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 							errors.title ? "border-red-500" : "border-gray-300"
 						}`}
 						placeholder="Enter book title"
+						autoComplete="off"
 					/>
 					{errors.title && (
 						<p className="mt-1 text-sm text-red-600">{errors.title}</p>
+					)}
+
+					{/* Suggestions Dropdown */}
+					{searchResults.length > 0 && (
+						<div
+							className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+							style={{ top: "100%" }}
+						>
+							{searchResults.map((book) => (
+								<div
+									key={book.id}
+									className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
+									onClick={() => handleBookClick(book)}
+								>
+									<div className="flex gap-3">
+										{book.coverUrl && (
+											<img
+												src={book.coverUrl}
+												alt={book.title}
+												className="w-12 h-16 object-cover rounded"
+												onError={(e) => {
+													e.currentTarget.style.display = "none"
+												}}
+											/>
+										)}
+										<div className="flex-1">
+											<p className="font-medium text-sm text-gray-800">
+												{book.title}
+											</p>
+											<p className="text-xs text-gray-600 mt-1">
+												{book.authorId || "Unknown author"}
+											</p>
+											<div className="flex gap-2 mt-1">
+												{book.publishedDate && (
+													<span className="text-xs text-gray-500">
+														{book.publishedDate}
+													</span>
+												)}
+												{book.isbn && (
+													<span className="text-xs text-blue-600">
+														ISBN: {book.isbn}
+													</span>
+												)}
+												{!book.isbn && (
+													<span className="text-xs text-red-500">
+														No ISBN available
+													</span>
+												)}
+											</div>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
 					)}
 				</div>
 

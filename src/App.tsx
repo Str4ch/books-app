@@ -12,6 +12,9 @@ import type { Book } from "./types/Book"
 import NavigationTabs from "./components/NavogationTabs"
 
 const App = () => {
+	const [authors, setAuthors] = useState<Author[]>([])
+	const [books, setBooks] = useState<Book[]>([])
+
 	// State
 	const [activeTab, setActiveTab] = useState("books")
 	const [searchTerm, setSearchTerm] = useState("")
