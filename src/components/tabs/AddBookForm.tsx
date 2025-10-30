@@ -24,8 +24,6 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 
 	const [errors, setErrors] = useState<Partial<Record<keyof Book, string>>>({})
 	const [searchResults, setSearchResults] = useState<any[]>([])
-	const [isSearching, setIsSearching] = useState(false)
-	const [isbnNotFound, setIsbnNotFound] = useState<boolean>(false)
 
 	const handleChange = (
 		e: React.ChangeEvent<
@@ -45,13 +43,11 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 		// Clear error when user starts typing
 		if (errors[name as keyof Book]) {
 			setErrors((prev) => ({ ...prev, [name]: "" }))
-			setIsbnNotFound(false)
 		}
 
 		// Search for books by title as user types (asynchronously)
 		if (name === "title" && value.length > 2) {
 			//console.log("title changes...", value)
-			setIsSearching(true)
 			searchBooksByTitle(value)
 				.then((books) => {
 					setSearchResults(books)
@@ -61,7 +57,7 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 					setSearchResults([])
 				})
 				.finally(() => {
-					setIsSearching(false)
+					// setIsSearching(false)
 				})
 		} else if (name === "title" && value.length <= 2) {
 			setSearchResults([])
@@ -189,7 +185,7 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 				{searchResults.length > 0 && (
 					<BookSearchResults
 						searchResults={searchResults}
-						authors={authors}
+						// authors={authors}
 						onSelectBook={handleBookClick}
 						onClearResults={() => setSearchResults([])}
 					/>

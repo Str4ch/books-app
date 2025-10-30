@@ -1,16 +1,16 @@
-import type { Author } from "../types/Authors"
+// import type { Author } from "../types/Authors"
 import type { BookSearchResult } from "../types/BookSearchResult"
 
 interface BookSearchResultsProps {
 	searchResults: BookSearchResult[]
-	authors: Author[]
+	// authors: Author[]
 	onSelectBook: (book: BookSearchResult) => void
 	onClearResults: () => void
 }
 
 const BookSearchResults = ({
 	searchResults,
-	authors,
+	// authors,
 	onSelectBook,
 	onClearResults,
 }: BookSearchResultsProps) => {
