@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react"
 import type { Author } from "../../types/Authors"
 import type { Book } from "../../types/Book"
 import { searchBooksByTitle } from "../../service/googleBooksService"
+import BookSearchResults from "../BookSearchResults"
+import type { BookSearchResult } from "../../types/BookSearchResult"
 
 
 interface AddBookFormProps {
@@ -10,12 +12,6 @@ interface AddBookFormProps {
 	onCancel?: () => void
 }
 
-interface BookSearchResultsProps {
-	searchResults: Book[]
-	authors: Author[]
-	onSelectBook: (book: Book) => void
-	onClearResults: () => void
-}
 const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 	const [formData, setFormData] = useState<Book>({
 		title: "",
@@ -37,7 +33,6 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 		>
 	) => {
 		const { name, value } = e.target
-		console.log(123)
 		// Update form data immediately (synchronously)
 		setFormData((prev) => ({
 			...prev,
@@ -59,8 +54,6 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 			setIsSearching(true)
 			searchBooksByTitle(value)
 				.then((books) => {
-					console.log("Found books:", books)
-
 					setSearchResults(books)
 				})
 				.catch((error) => {
@@ -140,19 +133,27 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 		return found ? found.id : 0
 	}
 
-	// Fill form when suggestion is clicked
-	const handleBookClick = (book: Book) => {
-		setFormData((prev) => ({
+	const handleBookClick = (book: BookSearchResult) => {
+		console.log(getAuthorIdByName(book.author))
+			setFormData((prev) => ({
 			...prev,
-			title: book.title || "",
-			authorId: book.authorId
-				? Number(book.authorId) || 0
-				: getAuthorIdByName(book.authorId as unknown as string),
-			isbn: book.isbn || "",
-			publishedYear: book.publishedYear || new Date().getFullYear(),
-			description: book.description || "",
-			coverUrl: book.coverUrl || "",
+			title: book.title,
+			description: book.description || prev.description,
+			coverUrl: book.thumbnail || prev.coverUrl,
+			publishedYear: book.publishedDate
+				? parseInt(book.publishedDate.substring(0, 4))
+				: prev.publishedYear,
+			isbn: book.isbn || prev.isbn,
+			authorId: getAuthorIdByName(book.author) || 0,
 		}))
+		// check if author exixts in authors list
+		const foundAuthor = authors.find((author) => author.name === book.author)
+		console.log("foundAuthor:", foundAuthor)
+		if (!foundAuthor) {
+			setErrors({
+				authorId: "No author found for this book. Please select manually.",
+			})
+		}
 		setSearchResults([])
 	}
 
@@ -185,59 +186,14 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 						<p className="mt-1 text-sm text-red-600">{errors.title}</p>
 					)}
 
-					{/* Suggestions Dropdown */}
-					{searchResults.length > 0 && (
-						<div
-							className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-							style={{ top: "100%" }}
-						>
-							{searchResults.map((book) => (
-								<div
-									key={book.id}
-									className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-									onClick={() => handleBookClick(book)}
-								>
-									<div className="flex gap-3">
-										{book.coverUrl && (
-											<img
-												src={book.coverUrl}
-												alt={book.title}
-												className="w-12 h-16 object-cover rounded"
-												onError={(e) => {
-													e.currentTarget.style.display = "none"
-												}}
-											/>
-										)}
-										<div className="flex-1">
-											<p className="font-medium text-sm text-gray-800">
-												{book.title}
-											</p>
-											<p className="text-xs text-gray-600 mt-1">
-												{book.authorId || "Unknown author"}
-											</p>
-											<div className="flex gap-2 mt-1">
-												{book.publishedDate && (
-													<span className="text-xs text-gray-500">
-														{book.publishedDate}
-													</span>
-												)}
-												{book.isbn && (
-													<span className="text-xs text-blue-600">
-														ISBN: {book.isbn}
-													</span>
-												)}
-												{!book.isbn && (
-													<span className="text-xs text-red-500">
-														No ISBN available
-													</span>
-												)}
-											</div>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
+				{searchResults.length > 0 && (
+					<BookSearchResults
+						searchResults={searchResults}
+						authors={authors}
+						onSelectBook={handleBookClick}
+						onClearResults={() => setSearchResults([])}
+					/>
+				)}
 				</div>
 
 				{/* Author Select */}

@@ -1,22 +1,22 @@
-import type { Book } from "../types/Book"
+import type { BookSearchResult } from "../types/BookSearchResult"
 
 const GOOGLE_BOOKS_API = "https://www.googleapis.com/books/v1/volumes"
 
-const transformGoogleBook = (item: any): Book => {
+const transformGoogleBook = (item: any): BookSearchResult => {
 	return {
 		id: item.id,
 		title: item.volumeInfo.title,
-		authorId: item.volumeInfo.authors || [],
+		author: item.volumeInfo.authors[0] || "",
 		description: item.volumeInfo.description || '',
-		coverUrl: item.volumeInfo.imageLinks?.thumbnail || '',
+		thumbnail: item.volumeInfo.imageLinks?.thumbnail || '',
         isbn: item.volumeInfo.industryIdentifiers[0].identifier,
-        publishedYear: item.volumeInfo.publishedDate
+        publishedDate: item.volumeInfo.publishedDate
 	}
 }
 
 
 
-export const searchBooksByTitle = async (title: string): Promise<Book[]> => {
+export const searchBooksByTitle = async (title: string): Promise<BookSearchResult[]> => {
 	try {
 		const params = new URLSearchParams({
 			q: `intitle:${title}`,
