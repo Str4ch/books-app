@@ -3,7 +3,8 @@ import { User } from "lucide-react"
 interface AuthorCardProps {
 	author: {
 		id: number
-		name: string
+		firstName: string
+		lastName: string
 		bio: string
 		birthYear: number
 		country: string
@@ -19,7 +20,7 @@ const AuthorCard = ({ author, bookCount }: AuthorCardProps) => {
 					<User className="w-8 h-8 text-blue-600" />
 				</div>
 				<div>
-					<h3 className="text-xl font-bold text-gray-800">{author.name}</h3>
+					<h3 className="text-xl font-bold text-gray-800">{author.firstName} {author.lastName}</h3>
 					<p className="text-sm text-gray-500">
 						{author.country} • Born {author.birthYear}
 					</p>

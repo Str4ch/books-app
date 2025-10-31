@@ -1,14 +1,15 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BookOpen } from "lucide-react"
 import BookCard from "./components/BookCard"
 import AuthorCard from "./components/AuthorCard"
 import SearchBar from "./components/SearchBar"
-import { staticBooks, staticAuthors } from "./mockData/staticData"
+//import { staticBooks, staticAuthors } from "./mockData/staticData"
 import AddAuthorForm from "./components/tabs/AddAuthorForm"
 import type { Author } from "./types/Authors"
 import AddBookForm from "./components/tabs/AddBookForm"
 import type { Book } from "./types/Book"
-
+import { authorService } from "./service/authorsService"
+import { bookService }from "./service/bookService"
 import NavigationTabs from "./components/NavogationTabs"
 
 const App = () => {
@@ -18,9 +19,39 @@ const App = () => {
 	// State
 	const [activeTab, setActiveTab] = useState("books")
 	const [searchTerm, setSearchTerm] = useState("")
+	const [books, setBooks] = useState<Book[]>([])
+	const [authors, setAuthors] = useState<Author[]>([])
+	const [filteredBooks, setFilteredBooks] = useState<any[]>([])
 
+	useEffect(() => {
+		const fetchData = async () => {
+			const fetchedBooks = await bookService.getBooks()
+			const fetchedAuthors = await authorService.getAuthors()
+			setBooks(fetchedBooks)
+			setAuthors(fetchedAuthors)
+		}
+		fetchData()
+	}, [])
+	useEffect(() => {
+	if (books.length > 0 && authors.length > 0) {
+		const filtered = books
+			.filter((book) => {
+				const author = getAuthorById(book.authorId)
+				return (
+					book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					author?.firstName.toLowerCase().includes(searchTerm.toLowerCase())
+				)
+			})
+			.map((book) => ({
+				...book,
+				author: getAuthorById(book.authorId), // ✅ attach author object
+			}))
+
+		setFilteredBooks(filtered)
+	}
+}, [books, authors, searchTerm])
 	const handleAddAuthor = (author: Author) => {
-		console.log("New author:", author)
+		authorService.createAuthor(author)
 		// Here you would typically:
 		// - Call your API to save the author
 		// - Update your state
@@ -28,7 +59,7 @@ const App = () => {
 	}
 
 	const handleAddBook = (book: Book) => {
-		console.log("New book:", book)
+		bookService.createBook(book)
 		// Here you would typically:
 		// - Call your API to save the book
 		// - Update your state
@@ -36,25 +67,22 @@ const App = () => {
 	}
 
 	const getAuthorById = (authorId: number) => {
-		return staticAuthors.find((author) => author.id === authorId)
+		return authors[authorId]
 	}
 
 	const getBookCountByAuthor = (authorId: number) => {
-		return staticBooks.filter((book) => book.authorId === authorId).length
+		return books.filter((b) => b.authorId === authorId).length
 	}
 
-	const filteredBooks = staticBooks.filter((book) => {
-		const author = getAuthorById(book.authorId)
-		return (
-			book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			author?.name.toLowerCase().includes(searchTerm.toLowerCase())
-		)
-	})
+	
+	//const filteredBooks = await bookService.getBooks()
 
-	const filteredAuthors = staticAuthors.filter((author) =>
+	/*const filteredAuthors = staticAuthors.filter((author) =>
 		author.name.toLowerCase().includes(searchTerm.toLowerCase())
-	)
-
+	)*/
+	//const filteredAuthors = await authorService.getAuthors()
+	console.log(authors)
+	console.log(filteredBooks)
 	return (
 		<div className="min-h-screen bg-gray-100">
 			{/* Header */}
@@ -72,8 +100,8 @@ const App = () => {
 			<NavigationTabs
 				activeTab={activeTab}
 				setActiveTab={setActiveTab}
-				booksCount={filteredBooks.length}
-				authorsCount={filteredAuthors.length}
+				booksCount={books.length}
+				authorsCount={authors.length}
 			/>
 
 			{/* Main Content */}
@@ -81,7 +109,7 @@ const App = () => {
 				{activeTab === "books" && (
 					<div className="space-y-4 flex flex-col flex-wrap">
 						{filteredBooks.length > 0 ? (
-							filteredBooks.map((book) => (
+							filteredBooks.map( (book) => (
 								<BookCard
 									key={book.id}
 									book={book}
@@ -98,8 +126,8 @@ const App = () => {
 
 				{activeTab === "authors" && (
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						{filteredAuthors.length > 0 ? (
-							filteredAuthors.map((author) => (
+						{books.length > 0 ? (
+							authors.map((author) => (
 								<AuthorCard
 									key={author.id}
 									author={author}
@@ -122,7 +150,7 @@ const App = () => {
 				)}
 
 				{activeTab === "add-book" && (
-					<AddBookForm authors={staticAuthors} onSubmit={handleAddBook} />
+					<AddBookForm authors={authors} onSubmit={handleAddBook} />
 				)}
 			</main>
 		</div>

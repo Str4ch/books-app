@@ -1,6 +1,6 @@
 import type { Author } from "../types/Authors"
 
-const API_BASE_URL = "https://easy-simple-users-rest-api.onrender.com"
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const authorService = {
     getAuthors: async (): Promise<Author[]> =>{
@@ -14,9 +14,15 @@ export const authorService = {
             throw new Error("Failed to fetch authors")
         }
         const responseJson = await response.json()
-        const data = responseJson.data
-        console.log(data)
-        return data
+        const authors: Author[] = responseJson.map((item: any) => ({
+            	id: item.Id,
+	            firstName: item.firstName,
+	            lastName: item.lastName,
+	            bio: item.bio,
+	            birthYear: item.yearOfBirth,
+	            country: item.country
+        }))
+        return authors
     },
     getAuthor: async (id: number): Promise<Author> => {
         const response = await fetch(`${API_BASE_URL}/api/Authors/${id}`)
@@ -24,11 +30,10 @@ export const authorService = {
             throw new Error("Failed to fetch author")
         }
         const responseJson = await response.json()
-        const data = responseJson.data
-        console.log(data)
-        return data
+        return responseJson
     },
     createAuthor: async (author: Author): Promise<Author> => {
+        console.log(author)
         const response = await fetch(`${API_BASE_URL}/api/Authors`, {
             method: "POST",
             headers: {
@@ -40,8 +45,6 @@ export const authorService = {
             throw new Error("Failed to fetch author")
         }
         const responseJson = await response.json()
-        const data = responseJson.data
-        console.log(data)
-        return data
+        return responseJson
     }
 }

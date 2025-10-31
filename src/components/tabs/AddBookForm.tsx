@@ -14,6 +14,7 @@ interface AddBookFormProps {
 
 const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 	const [formData, setFormData] = useState<Book>({
+		id: 0,
 		title: "",
 		authorId: 0,
 		isbn: "",
@@ -112,6 +113,7 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 			onSubmit(formData)
 			// Reset form after successful submission
 			setFormData({
+				id: 0,
 				title: "",
 				authorId: 0,
 				isbn: "",
@@ -125,8 +127,9 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 
 	// Helper to find authorId by name (if needed)
 	const getAuthorIdByName = (name: string) => {
-		const found = authors.find((a) => a.name === name)
-		return found ? found.id : 0
+		const firstName = name.split(" ")[0], lastName = name.split(" ")[1]
+		const found = authors.find((a) => a.firstName === firstName && a.lastName === lastName)
+		return found ? 1 : 0
 	}
 
 	const handleBookClick = (book: BookSearchResult) => {
@@ -143,7 +146,8 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 			authorId: getAuthorIdByName(book.author) || 0,
 		}))
 		// check if author exixts in authors list
-		const foundAuthor = authors.find((author) => author.name === book.author)
+		const firstName = book.author.split(" ")[0], lastName = book.author.split(" ")[1]
+		const foundAuthor = authors.find((a) => a.firstName === firstName && a.lastName === lastName)
 		console.log("foundAuthor:", foundAuthor)
 		if (!foundAuthor) {
 			setErrors({
@@ -210,9 +214,9 @@ const AddBookForm = ({ authors, onSubmit, onCancel }: AddBookFormProps) => {
 						}`}
 					>
 						<option value={0}>Select an author</option>
-						{authors.map((author) => (
-							<option key={author.id} value={author.id}>
-								{author.name}
+						{authors.map((author, index) => (
+							<option key={index} value={index}>
+								{author.firstName} {author.lastName}
 							</option>
 						))}
 					</select>
